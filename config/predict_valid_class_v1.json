@@ -1,0 +1,30 @@
+{
+  "version": "predict_valid_class_v1",
+  "sequence_length": 72,
+  "landmarks": 33,
+  "features_per_landmark": 4,
+  "valid_start_threshold": 0.60,
+  "borderline_start_min": 0.45,
+  "pose_visibility_min": 0.50,
+  "no_pose_ratio_max": 0.55,
+  "strong_error_threshold": 0.70,
+  "visual_review_threshold": 0.55,
+  "base_score": 100.0,
+  "penalties": {
+    "body_rises_early": 12.0,
+    "front_knee_bad": 10.0,
+    "rear_knee_bad": 9.0,
+    "hip_position_bad": 11.0,
+    "first_step_bad": 13.0,
+    "arms_bad": 8.0
+  },
+  "labels": [
+    "valid_start",
+    "body_rises_early",
+    "front_knee_bad",
+    "rear_knee_bad",
+    "hip_position_bad",
+    "first_step_bad",
+    "arms_bad"
+  ]
+}

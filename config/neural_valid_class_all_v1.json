@@ -1,0 +1,36 @@
+{
+  "version": "valid_class_all_v1",
+  "sequence_length": 72,
+  "feature_dim": 132,
+  "label_names": [
+    "valid_start",
+    "body_rises_early",
+    "front_knee_bad",
+    "rear_knee_bad",
+    "hip_position_bad",
+    "first_step_bad",
+    "arms_bad"
+  ],
+  "error_label_names": [
+    "body_rises_early",
+    "front_knee_bad",
+    "rear_knee_bad",
+    "hip_position_bad",
+    "first_step_bad",
+    "arms_bad"
+  ],
+  "thresholds": {
+    "valid_start": 0.65,
+    "borderline_valid_start_min": 0.45,
+    "strong_error": 0.70,
+    "visual_review_min": 0.55
+  },
+  "training": {
+    "default_epochs": 80,
+    "early_stopping_patience": 12,
+    "reduce_lr_patience": 5,
+    "validation_split": 0.20,
+    "random_seed": 42,
+    "learning_rate": 0.001
+  }
+}

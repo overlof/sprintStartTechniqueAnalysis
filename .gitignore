@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Generated analysis artifacts
+outputs/*
+!outputs/.gitkeep
+*.log
+
+# Temporary media
+*.tmp
+*.temp
+
+# Local secrets / environment
+.env
+.env.*
