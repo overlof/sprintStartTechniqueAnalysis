@@ -34,7 +34,17 @@ def main():
     from mediapipe.tasks.python import vision
     import mediapipe as mp
     BaseOptions = mp_python.BaseOptions
-    options = vision.PoseLandmarkerOptions(base_options=BaseOptions(model_asset_path=args.pose_model), running_mode=vision.RunningMode.IMAGE, num_poses=1)
+    pose_model_path = Path(args.pose_model)
+    if not pose_model_path.is_file():
+        raise FileNotFoundError(f"PoseLandmarker model file not found: {pose_model_path}")
+    pose_model_bytes = pose_model_path.read_bytes()
+    if not pose_model_bytes:
+        raise RuntimeError(f"PoseLandmarker model file is empty: {pose_model_path}")
+    options = vision.PoseLandmarkerOptions(
+        base_options=BaseOptions(model_asset_buffer=pose_model_bytes),
+        running_mode=vision.RunningMode.IMAGE,
+        num_poses=1,
+    )
     landmarker = vision.PoseLandmarker.create_from_options(options)
     in_path=Path(args.input)
     vids=sorted(list(in_path.rglob('*.mp4'))) if in_path.is_dir() else [in_path]
