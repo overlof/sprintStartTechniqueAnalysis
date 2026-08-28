@@ -47,6 +47,7 @@ sprintStartTechniqueAnalysis/
 │   ├── extract_sequences_final_v4_fixed_shape.py
 │   ├── predict_valid_class_all_v1.py
 │   ├── run_from_1c_full_analysis.py
+│   ├── run_from_1c_full_analysis_core.py
 │   └── train_lstm_valid_class_all_v1.py
 ├── .gitignore
 ├── requirements.txt
@@ -122,6 +123,8 @@ python scripts/run_from_1c_full_analysis.py \
   --pose-model models/pose_landmarker_full.task \
   --config config/predict_valid_class_v1.json
 ```
+
+Точкой запуска для 1С остаётся `run_from_1c_full_analysis.py`; общая вспомогательная логика вынесена в `run_from_1c_full_analysis_core.py`.
 
 Дополнительные флаги:
 
