@@ -102,7 +102,17 @@ def list_videos(path):
 
 
 def make_landmarker(model_path):
-    base_options = mp_python.BaseOptions(model_asset_path=str(model_path))
+    # MediaPipe Tasks on Windows can fail to open model_asset_path when the
+    # absolute path contains non-ASCII characters (for example a Cyrillic
+    # Windows user profile). Python can read such paths correctly, so pass
+    # the model bytes directly to MediaPipe instead of the filesystem path.
+    model_path = Path(model_path)
+    if not model_path.is_file():
+        raise FileNotFoundError(f"PoseLandmarker model file not found: {model_path}")
+    model_bytes = model_path.read_bytes()
+    if not model_bytes:
+        raise RuntimeError(f"PoseLandmarker model file is empty: {model_path}")
+    base_options = mp_python.BaseOptions(model_asset_buffer=model_bytes)
     options = vision.PoseLandmarkerOptions(
         base_options=base_options,
         running_mode=vision.RunningMode.IMAGE,
@@ -444,16 +454,23 @@ def main():
     ap.add_argument("--output-json", default="outputs/final_predict_valid_class/reports/predictions_valid_class.json")
     ap.add_argument("--output-csv", default="outputs/final_predict_valid_class/metrics/predictions_valid_class.csv")
     ap.add_argument("--output-html", default="outputs/final_predict_valid_class/reports/index_valid_class.html")
+    ap.add_argument("--skip-html", action="store_true", help="Do not create HTML report")
     args = ap.parse_args()
 
+    print(f"[1/4] Чтение конфигурации: {args.config}", flush=True)
     cfg = load_json(args.config)
+    print(f"[2/4] Чтение meta JSON: {args.meta}", flush=True)
     meta = load_json(args.meta)
-    model = tf.keras.models.load_model(args.model)
+    print(f"[3/4] Загрузка Keras-модели: {args.model}", flush=True)
+    # Для инференса состояние optimizer/loss не требуется. compile=False также
+    # делает загрузку устойчивее между совместимыми версиями TensorFlow/Keras.
+    model = tf.keras.models.load_model(args.model, compile=False)
+    print(f"[4/4] Создание MediaPipe PoseLandmarker: {args.pose_model}", flush=True)
+    landmarker = make_landmarker(Path(args.pose_model))
     videos = list_videos(args.input)
     if not videos:
         raise SystemExit(f"No videos found in {args.input}")
 
-    landmarker = make_landmarker(Path(args.pose_model))
     items = []
     for i, video in enumerate(videos, 1):
         print(f"[{i}/{len(videos)}] {video.name}")
@@ -468,11 +485,15 @@ def main():
     }
     save_json(args.output_json, out)
     write_csv(args.output_csv, items)
-    render_html(args.output_html, items, cfg.get("version", "predict_valid_class_v1"))
+    if not args.skip_html:
+        render_html(args.output_html, items, cfg.get("version", "predict_valid_class_v1"))
     print("Saved:")
     print("  JSON:", args.output_json)
     print("  CSV :", args.output_csv)
-    print("  HTML:", args.output_html)
+    if not args.skip_html:
+        print("  HTML:", args.output_html)
+    else:
+        print("  HTML: skipped")
 
 
 if __name__ == "__main__":
