@@ -12,6 +12,9 @@
 - генерация JSON, CSV и HTML-отчётов;
 - формирование `result_1c.json` для интеграции с 1С;
 - построение видео со скелетом спортсмена;
+- выбор модели, metadata и PoseLandmarker со стороны 1С;
+- повторное использование ранее выполненного анализа при совпадении видео и параметров модели;
+- принудительный повторный анализ через `--force-reanalyze`;
 - обучение BiLSTM-модели на подготовленных наборах данных.
 
 ## Распознаваемые классы
@@ -28,22 +31,16 @@
 
 ```text
 sprintStartTechniqueAnalysis/
-├── config/                         # конфигурация обучения, инференса и рекомендаций
+├── config/
 │   ├── neural_valid_class_all_v1.json
 │   ├── predict_valid_class_v1.json
 │   └── recommendations_catalog_v6.json
-├── data/                           # подготовленные обучающие выборки
-│   ├── clean29_labels/
-│   ├── clean29_sequences/
-│   ├── invalid_start_sequences/
-│   ├── real_104_labels/
-│   ├── real_104_sequences/
-│   └── synthetic_v12/
-├── models/                         # обученная BiLSTM и MediaPipe PoseLandmarker
+├── data/
+├── models/
 │   ├── neural_lstm_valid_class_all_v1.keras
 │   ├── neural_lstm_valid_class_all_v1_meta.json
 │   └── pose_landmarker_full.task
-├── outputs/                        # генерируемые результаты анализа
+├── outputs/
 ├── scripts/
 │   ├── annotate_skeletons_for_lstm_check_v1.py
 │   ├── enrich_result_for_1c_v6.py
@@ -73,15 +70,17 @@ valid_start + вероятности технических ошибок
   ↓
 JSON / CSV / HTML
   ↓
-result_1c.json
+result_1c.json + result_paths.json
   ↓
 1С:Предприятие
 ```
 
+Вероятность технической ошибки показывает уверенность модели в наличии соответствующего признака и не является методической критичностью ошибки. Приоритет коррекции определяется в 1С после проверки тренером.
+
 ## Установка
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/overlof/sprintStartTechniqueAnalysis.git
 cd sprintStartTechniqueAnalysis
 python -m venv .venv
 ```
@@ -111,53 +110,30 @@ python scripts/predict_valid_class_all_v1.py \
   --config config/predict_valid_class_v1.json
 ```
 
-По умолчанию результаты сохраняются в `outputs/final_predict_valid_class/`.
-
 ## Полный запуск для 1С
 
 ```bash
 python scripts/run_from_1c_full_analysis.py \
   --project-root . \
-  --video path/to/video.mp4
+  --video path/to/video.mp4 \
+  --output-dir outputs/from_1c_python \
+  --model models/neural_lstm_valid_class_all_v1.keras \
+  --meta models/neural_lstm_valid_class_all_v1_meta.json \
+  --pose-model models/pose_landmarker_full.task \
+  --config config/predict_valid_class_v1.json
 ```
 
-Скрипт выполняет полный конвейер анализа, создаёт отчёты и подготавливает результат для дальнейшей загрузки в 1С.
+Дополнительные флаги:
 
-## Формирование результата для 1С отдельно
+- `--skip-skeleton` — не создавать видео со скелетом;
+- `--skip-html` — не создавать HTML-отчёты;
+- `--force-reanalyze` — игнорировать найденный кэш и повторно запустить нейросеть;
+- `--open-html` — оставлен для совместимости, HTML автоматически не открывается.
 
-```bash
-python scripts/enrich_result_for_1c_v6.py \
-  --predictions outputs/final_predict_valid_class/reports/predictions_valid_class.json \
-  --recommendations config/recommendations_catalog_v6.json \
-  --out outputs/result_1c.json \
-  --video path/to/video.mp4
-```
+## Повторное использование анализа
 
-## Извлечение последовательностей из видео
-
-```bash
-python scripts/extract_sequences_final_v4_fixed_shape.py \
-  --input path/to/videos \
-  --output data/sequences.npz \
-  --model models/pose_landmarker_full.task
-```
-
-## Обучение модели
-
-```bash
-python scripts/train_lstm_valid_class_all_v1.py \
-  --synthetic-sequences data/synthetic_v12/synthetic_sequences_v12.npz \
-  --synthetic-labels data/synthetic_v12/synthetic_labels.csv \
-  --real104-sequences data/real_104_sequences/real104_sequences_final.npz \
-  --real104-labels data/real_104_labels/real104_trimmed_labels_for_training_v13.csv \
-  --clean29-sequences data/clean29_sequences/clean29_sequences_final.npz \
-  --clean29-labels data/clean29_labels/clean29_labels_for_training.csv \
-  --invalid-sequences data/invalid_start_sequences/invalid_sequences_final.npz \
-  --output-model models/neural_lstm_valid_class_all_v1.keras \
-  --output-meta models/neural_lstm_valid_class_all_v1_meta.json \
-  --report-json outputs/training_report.json
-```
+`run_from_1c_full_analysis.py` ищет ранее выполненный анализ и повторно использует его только при совпадении исходного видео и существенных параметров анализа, включая модель, metadata, PoseLandmarker и конфигурацию порогов. Для видео проверяются имя, размер и SHA-256. При совпадении возвращается `CACHE_HIT=1`, и TensorFlow/MediaPipe повторно не запускаются.
 
 ## Примечание о `outputs/`
 
-Результаты запусков, временные видео, логи и сгенерированные отчёты специально не хранятся в репозитории. Они создаются локально во время работы программы и исключены через `.gitignore`.
+Результаты запусков, временные видео, логи и сгенерированные отчёты не хранятся в репозитории. Они создаются локально во время работы программы и исключены через `.gitignore`.
