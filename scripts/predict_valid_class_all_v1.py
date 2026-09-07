@@ -232,22 +232,22 @@ def compute_score(probs, cfg):
     return round(max(0.0, min(100.0, score)), 1)
 
 
-def score_text(score):
+def score_text(score, cfg):
     if score is None:
         return "оценка не сформирована"
-    if score >= 85:
+    if score >= cfg["score_good_threshold"]:
         return "хорошо"
-    if score >= 70:
+    if score >= cfg["score_mid_threshold"]:
         return "удовлетворительно"
     return "требует доработки"
 
 
-def score_class(score):
+def score_class(score, cfg):
     if score is None:
         return "bad"
-    if score >= 85:
+    if score >= cfg["score_good_threshold"]:
         return "good"
-    if score >= 70:
+    if score >= cfg["score_mid_threshold"]:
         return "mid"
     return "bad"
 
@@ -340,7 +340,7 @@ def analyze_video(video, model, meta, landmarker, cfg):
         "valid_start_probability": valid_prob,
         "valid_start_probability_percent": round(valid_prob * 100, 1),
         "score": score,
-        "score_text": score_text(score),
+        "score_text": score_text(score, cfg),
         "pose_visibility_mean": round(float(pose_info["pose_visibility_mean"]), 4),
         "no_pose_ratio": round(float(pose_info["no_pose_ratio"]), 4),
         "flags": flags,
@@ -390,7 +390,7 @@ def render_html(path, items, version):
             probs_rows.append(f"<tr><td>{esc(lab['ru_name'])}</td><td>{lab['probability_percent']}%</td><td>{esc(lab['severity'])}</td></tr>")
         cards.append(f"""
         <section class='card'>
-          <div class='top'><div><h2>{esc(item['filename'])}</h2><p class='muted'>{esc(status_ru)}</p></div><div class='score {score_class(score)}'>{score_html}</div></div>
+          <div class='top'><div><h2>{esc(item['filename'])}</h2><p class='muted'>{esc(status_ru)}</p></div><div class='score {score_class(score, cfg)}'>{score_html}</div></div>
           <div class='grid'>
             <div><b>Valid start:</b><br>{item['valid_start_probability_percent']}%</div>
             <div><b>Средняя видимость точек:</b><br>{item['pose_visibility_mean']}</div>
