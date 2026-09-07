@@ -3,11 +3,11 @@
   "sequence_length": 72,
   "landmarks": 33,
   "features_per_landmark": 4,
-  "valid_start_threshold": 0.60,
+  "valid_start_threshold": 0.6,
   "borderline_start_min": 0.45,
-  "pose_visibility_min": 0.50,
+  "pose_visibility_min": 0.5,
   "no_pose_ratio_max": 0.55,
-  "strong_error_threshold": 0.70,
+  "strong_error_threshold": 0.7,
   "visual_review_threshold": 0.55,
   "base_score": 100.0,
   "penalties": {
@@ -26,5 +26,21 @@
     "hip_position_bad",
     "first_step_bad",
     "arms_bad"
-  ]
+  ],
+  "error_signal_min": 0.2,
+  "recommendation_medium_threshold": 0.45,
+  "score_good_threshold": 85.0,
+  "score_mid_threshold": 70.0,
+  "report_score_excellent_threshold": 90.0,
+  "report_score_good_threshold": 80.0,
+  "report_score_satisfactory_threshold": 70.0,
+  "report_score_rework_threshold": 60.0,
+  "reliability_high_visibility_min": 0.82,
+  "reliability_high_no_pose_max": 0.2,
+  "reliability_medium_visibility_min": 0.7,
+  "reliability_medium_no_pose_max": 0.4,
+  "recognition_quality_high_percent": 90.0,
+  "recognition_quality_medium_percent": 70.0,
+  "html_score_good_threshold": 85.0,
+  "html_score_mid_threshold": 70.0
 }

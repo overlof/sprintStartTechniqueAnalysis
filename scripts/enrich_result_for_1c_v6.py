@@ -176,12 +176,12 @@ def normalize_predictions(data: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
-def level_by_probability(probability: float) -> str:
-    if probability >= 0.70:
+def level_by_probability(probability: float, thresholds: Dict[str, float]) -> str:
+    if probability >= thresholds["strong_error_threshold"]:
         return "high"
-    if probability >= 0.45:
+    if probability >= thresholds["recommendation_medium_threshold"]:
         return "medium"
-    if probability >= 0.20:
+    if probability >= thresholds["error_signal_min"]:
         return "low"
     return "none"
 
@@ -212,12 +212,12 @@ def select_recommendations(catalog: Dict[str, Any], error_key: str, level: str, 
     return rng.sample(items, min(count, len(items)))
 
 
-def quality_label(success_percent: Optional[float]) -> str:
+def quality_label(success_percent: Optional[float], thresholds: Dict[str, float]) -> str:
     if success_percent is None:
         return "не определено"
-    if success_percent >= 90:
+    if success_percent >= thresholds["recognition_quality_high_percent"]:
         return "высокое"
-    if success_percent >= 75:
+    if success_percent >= thresholds["recognition_quality_medium_percent"]:
         return "среднее"
     return "низкое"
 
@@ -225,6 +225,7 @@ def quality_label(success_percent: Optional[float]) -> str:
 def build_1c_result(
     predictions: Dict[str, Any],
     recommendations_catalog: Dict[str, Any],
+    thresholds: Dict[str, float],
     video_path: Optional[str | Path] = None,
     model_version: str = "neural_error_lstm_final.keras",
 ) -> Dict[str, Any]:
@@ -264,7 +265,7 @@ def build_1c_result(
 
     for key in ERROR_KEYS:
         probability = float(error_probs.get(key, 0.0))
-        level = level_by_probability(probability)
+        level = level_by_probability(probability, thresholds)
         recs = select_recommendations(recommendations_catalog, key, level, probability)
 
         if level != "none":
@@ -304,7 +305,7 @@ def build_1c_result(
             "lost_pose_frames": lost_pose_frames,
             "pose_loss_percent": pose_loss_percent,
             "pose_success_percent": pose_success_percent,
-            "recognition_quality_label": quality_label(pose_success_percent),
+            "recognition_quality_label": quality_label(pose_success_percent, thresholds),
             "pose_visibility_mean": pred.get("pose_visibility_mean"),
             "no_pose_ratio": pred.get("no_pose_ratio"),
         },
@@ -337,14 +338,17 @@ def create_1c_result(
     predictions_path: str | Path,
     recommendations_path: str | Path,
     out_path: str | Path,
+    config_path: str | Path,
     video_path: Optional[str | Path] = None,
     model_version: str = "neural_error_lstm_final.keras",
 ) -> Dict[str, Any]:
     predictions = read_json(predictions_path)
     recommendations_catalog = read_json(recommendations_path)
+    thresholds = read_json(config_path)
     result = build_1c_result(
         predictions=predictions,
         recommendations_catalog=recommendations_catalog,
+        thresholds=thresholds,
         video_path=video_path,
         model_version=model_version,
     )
@@ -357,6 +361,7 @@ def main() -> None:
     parser.add_argument("--predictions", required=True)
     parser.add_argument("--recommendations", default="config/recommendations_catalog_v6.json")
     parser.add_argument("--out", default="outputs/result_1c.json")
+    parser.add_argument("--config", default="config/predict_valid_class_v1.json")
     parser.add_argument("--video", default=None)
     parser.add_argument("--model-version", default="neural_error_lstm_final.keras")
     args = parser.parse_args()
@@ -365,6 +370,7 @@ def main() -> None:
         predictions_path=args.predictions,
         recommendations_path=args.recommendations,
         out_path=args.out,
+        config_path=args.config,
         video_path=args.video,
         model_version=args.model_version,
     )
